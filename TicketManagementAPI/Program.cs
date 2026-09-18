@@ -1,7 +1,10 @@
 
 using Microsoft.EntityFrameworkCore;
 using TicketManagement.API.Data;
-
+using TicketManagement.API.Repositories;
+using TicketManagement.API.Repositories.Interfaces;
+using TicketManagement.API.Services;
+using TicketManagement.API.Services.Interfaces;
 namespace TicketManagementAPI
 {
     public class Program
@@ -21,6 +24,10 @@ namespace TicketManagementAPI
                     builder.Configuration.GetConnectionString("DefaultConnection")
                 )
             );
+
+            //Adding DI
+            builder.Services.AddScoped<ITicketRepository, TicketRepository>();
+            builder.Services.AddScoped<ITicketService, TicketService>();
 
             // Add Swagger
             builder.Services.AddEndpointsApiExplorer();
