@@ -216,4 +216,126 @@ public class TicketService : ITicketService
     {
         return $"TKT-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
     }
+
+    public async Task<ApiResponse<TicketResponseDto>> UpdateAsync(
+    int id,
+    UpdateTicketDto dto,
+    int userId,
+    string role)
+    {
+        if (id <= 0)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid ticket ID",
+                null);
+        }
+
+        if (userId <= 0)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid user",
+                null);
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Title))
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket title is required",
+                null);
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Description))
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket description is required",
+                null);
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Priority))
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket priority is required",
+                null);
+        }
+
+        if (!Enum.TryParse<TicketPriority>(
+            dto.Priority,
+            true,
+            out var priority))
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid ticket priority",
+                null);
+        }
+
+        var ticket = await _ticketRepository.GetByIdAsync(id);
+
+        if (ticket == null)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket not found",
+                null);
+        }
+
+        // Closed or rejected tickets cannot be edited
+        if (ticket.Status == TicketStatus.Closed ||
+            ticket.Status == TicketStatus.Rejected)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Closed or rejected tickets cannot be updated",
+                null);
+        }
+
+        // Authorization based on JWT role
+        bool canUpdate = role switch
+        {
+            "Admin" => true,
+
+            "Solver" =>
+                ticket.AssignedToUserId == userId,
+
+            "Employee" =>
+                ticket.CreatedByUserId == userId,
+
+            _ => false
+        };
+
+        if (!canUpdate)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "You are not authorized to update this ticket",
+                null);
+        }
+
+        ticket.Title = dto.Title.Trim();
+        ticket.Description = dto.Description.Trim();
+        ticket.Priority = priority;
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        await _ticketRepository.SaveChangesAsync();
+
+        var updatedTicket = await _ticketRepository.GetByIdAsync(id);
+
+        if (updatedTicket == null)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket updated but could not be retrieved",
+                null);
+        }
+
+        return new ApiResponse<TicketResponseDto>(
+            "Success",
+            "Ticket updated successfully",
+            MapToDto(updatedTicket));
+    }
 }

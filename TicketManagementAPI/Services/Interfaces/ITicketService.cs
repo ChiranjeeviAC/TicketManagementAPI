@@ -18,4 +18,10 @@ public interface ITicketService
 
     Task<ApiResponse<List<TicketResponseDto>>> GetAssignedTicketsAsync(
         int userId);
+
+    Task<ApiResponse<TicketResponseDto>> UpdateAsync(
+       int id,
+       UpdateTicketDto dto,
+       int userId,
+       string role);
 }

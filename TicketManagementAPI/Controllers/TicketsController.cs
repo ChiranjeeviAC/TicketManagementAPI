@@ -119,4 +119,51 @@ public class TicketsController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(
+    int id,
+    [FromBody] UpdateTicketDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "Invalid user identity",
+                null));
+        }
+
+        var role = User.FindFirstValue(
+            ClaimTypes.Role);
+
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "User role not found",
+                null));
+        }
+
+        var response = await _ticketService.UpdateAsync(
+            id,
+            dto,
+            userId,
+            role);
+
+        if (response.Status == "Error")
+        {
+            if (response.Message.Contains("authorized"))
+                return Forbid();
+
+            if (response.Message == "Ticket not found")
+                return NotFound(response);
+
+            return BadRequest(response);
+        }
+
+        return Ok(response);
+    }
 }

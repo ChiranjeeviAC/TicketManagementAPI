@@ -13,4 +13,6 @@ public interface ITicketRepository
     Task<List<Ticket>> GetByAssignedToUserIdAsync(int userId);
 
     Task AddAsync(Ticket ticket);
+
+    Task SaveChangesAsync();
 }
