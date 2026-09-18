@@ -27,4 +27,15 @@ public class AuthController : ControllerBase
             StatusCodes.Status201Created,
             response);
     }
+
+    [HttpPost("login")]
+    public async Task<IActionResult> Login(LoginDto dto)
+    {
+        var response = await _authService.LoginAsync(dto);
+
+        if (response.Status == "Error")
+            return Unauthorized(response);
+
+        return Ok(response);
+    }
 }

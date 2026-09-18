@@ -1,13 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 using TicketManagement.API.DTOs.Tickets;
-using TicketManagement.API.Helpers;
 using TicketManagement.API.Models;
 using TicketManagement.API.Services.Interfaces;
 
 namespace TicketManagement.API.Controllers;
 
+
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class TicketsController : ControllerBase
 {
     private readonly ITicketService _ticketService;
@@ -21,16 +24,7 @@ public class TicketsController : ControllerBase
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
-        if (!TokenHelper.HasToken(Request))
-        {
-            return Unauthorized(
-                new ApiResponse<object>(
-                    "Error",
-                    "No token available",
-                    null
-                )
-            );
-        }
+        
 
         var response = await _ticketService.GetAllAsync();
 
@@ -41,16 +35,7 @@ public class TicketsController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        if (!TokenHelper.HasToken(Request))
-        {
-            return Unauthorized(
-                new ApiResponse<object>(
-                    "Error",
-                    "No token available",
-                    null
-                )
-            );
-        }
+        
 
         var response = await _ticketService.GetByIdAsync(id);
 
@@ -67,20 +52,17 @@ public class TicketsController : ControllerBase
     public async Task<IActionResult> Create(
         [FromBody] CreateTicketDto dto)
     {
-        if (!TokenHelper.HasToken(Request))
-        {
-            return Unauthorized(
-                new ApiResponse<object>(
-                    "Error",
-                    "No token available",
-                    null
-                )
-            );
-        }
+        // Get logged-in user's ID from JWT
+        var userIdClaim = User.FindFirstValue(
+    ClaimTypes.NameIdentifier);
 
-        // TEMPORARY USER ID FOR TESTING
-        // This will be replaced with JWT UserId.
-        int userId = 1;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "Invalid user identity",
+                null));
+        }
 
         var response =
             await _ticketService.CreateAsync(dto, userId);
@@ -100,19 +82,16 @@ public class TicketsController : ControllerBase
     [HttpGet("my")]
     public async Task<IActionResult> GetMyTickets()
     {
-        if (!TokenHelper.HasToken(Request))
-        {
-            return Unauthorized(
-                new ApiResponse<object>(
-                    "Error",
-                    "No token available",
-                    null
-                )
-            );
-        }
+        var userIdClaim = User.FindFirstValue(
+          ClaimTypes.NameIdentifier);
 
-        // TEMPORARY USER ID FOR TESTING
-        int userId = 1;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "Invalid user identity",
+                null));
+        }
 
         var response =
             await _ticketService.GetMyTicketsAsync(userId);
@@ -124,19 +103,16 @@ public class TicketsController : ControllerBase
     [HttpGet("assigned")]
     public async Task<IActionResult> GetAssignedTickets()
     {
-        if (!TokenHelper.HasToken(Request))
-        {
-            return Unauthorized(
-                new ApiResponse<object>(
-                    "Error",
-                    "No token available",
-                    null
-                )
-            );
-        }
+        var userIdClaim = User.FindFirstValue(
+             ClaimTypes.NameIdentifier);
 
-        // TEMPORARY USER ID FOR TESTING
-        int userId = 1;
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "Invalid user identity",
+                null));
+        }
 
         var response =
             await _ticketService.GetAssignedTicketsAsync(userId);

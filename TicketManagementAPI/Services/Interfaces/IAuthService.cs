@@ -6,4 +6,5 @@ namespace TicketManagement.API.Services.Interfaces;
 public interface IAuthService
 {
     Task<ApiResponse<object>> RegisterAsync(RegisterDto dto);
+    Task<ApiResponse<object>> LoginAsync(LoginDto dto);
 }
