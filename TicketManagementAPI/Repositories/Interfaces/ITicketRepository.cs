@@ -20,4 +20,9 @@ public interface ITicketRepository
 
     Task<List<TicketStatusHistory>> GetStatusHistoryAsync(
         int ticketId);
+
+    Task AddCommentAsync(TicketComment comment);
+
+    Task<List<TicketComment>> GetCommentsAsync(
+        int ticketId);
 }

@@ -493,4 +493,51 @@ public class TicketService : ITicketService
             MapToDto(updatedTicket!));
     }
 
+    public async Task<ApiResponse<object>> AddCommentAsync(
+    int ticketId,
+    AddCommentDto dto,
+    int userId)
+    {
+        if (ticketId <= 0)
+        {
+            return new ApiResponse<object>(
+                "Error",
+                "Invalid ticket ID",
+                null);
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Comment))
+        {
+            return new ApiResponse<object>(
+                "Error",
+                "Comment is required",
+                null);
+        }
+
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+
+        if (ticket == null)
+        {
+            return new ApiResponse<object>(
+                "Error",
+                "Ticket not found",
+                null);
+        }
+
+        var comment = new TicketComment
+        {
+            TicketId = ticketId,
+            UserId = userId,
+            Comment = dto.Comment.Trim(),
+            CreatedAt = DateTime.UtcNow
+        };
+
+        await _ticketRepository.AddCommentAsync(comment);
+
+        return new ApiResponse<object>(
+            "Success",
+            "Comment added successfully",
+            null);
+    }
+
 }

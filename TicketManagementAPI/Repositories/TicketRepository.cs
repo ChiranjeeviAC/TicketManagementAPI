@@ -80,6 +80,21 @@ public class TicketRepository : ITicketRepository
             .ToListAsync();
     }
 
+    public async Task AddCommentAsync(
+    TicketComment comment)
+    {
+        await _context.TicketComments.AddAsync(comment);
+        await _context.SaveChangesAsync();
+    }
 
+    public async Task<List<TicketComment>> GetCommentsAsync(
+        int ticketId)
+    {
+        return await _context.TicketComments
+            .Include(c => c.User)
+            .Where(c => c.TicketId == ticketId)
+            .OrderBy(c => c.CreatedAt)
+            .ToListAsync();
+    }
 
 }

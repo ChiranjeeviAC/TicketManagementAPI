@@ -242,4 +242,36 @@ public class TicketsController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpPost("{id:int}/comments")]
+    public async Task<IActionResult> AddComment(
+    int id,
+    [FromBody] AddCommentDto dto)
+    {
+        var userIdClaim = User.FindFirstValue(
+            ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(userIdClaim, out var userId))
+        {
+            return Unauthorized(new ApiResponse<object>(
+                "Error",
+                "Invalid user identity",
+                null));
+        }
+
+        var response = await _ticketService.AddCommentAsync(
+            id,
+            dto,
+            userId);
+
+        if (response.Status == "Error")
+        {
+            if (response.Message == "Ticket not found")
+                return NotFound(response);
+
+            return BadRequest(response);
+        }
+
+        return Ok(response);
+    }
 }

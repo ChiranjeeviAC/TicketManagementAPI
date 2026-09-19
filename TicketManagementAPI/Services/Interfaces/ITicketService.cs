@@ -34,4 +34,9 @@ public interface ITicketService
     UpdateTicketStatusDto dto,
     int userId,
     string role);
+
+    Task<ApiResponse<object>> AddCommentAsync(
+    int ticketId,
+    AddCommentDto dto,
+    int userId);
 }
