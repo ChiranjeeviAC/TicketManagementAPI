@@ -540,4 +540,57 @@ public class TicketService : ITicketService
             null);
     }
 
+    public async Task<ApiResponse<TicketActivityDto>> GetActivityAsync(
+    int ticketId)
+    {
+        if (ticketId <= 0)
+        {
+            return new ApiResponse<TicketActivityDto>(
+                "Error",
+                "Invalid ticket ID",
+                null);
+        }
+
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+
+        if (ticket == null)
+        {
+            return new ApiResponse<TicketActivityDto>(
+                "Error",
+                "Ticket not found",
+                null);
+        }
+
+        var comments =
+            await _ticketRepository.GetCommentsAsync(ticketId);
+
+        var history =
+            await _ticketRepository.GetStatusHistoryAsync(ticketId);
+
+        var data = new TicketActivityDto
+        {
+            Comments = comments.Select(c => new CommentResponseDto
+            {
+                User = c.User.FullName,
+                Comment = c.Comment,
+                CreatedAt = c.CreatedAt
+            }).ToList(),
+
+            StatusHistory = history.Select(h =>
+                new StatusHistoryResponseDto
+                {
+                    OldStatus = h.OldStatus.ToString(),
+                    NewStatus = h.NewStatus.ToString(),
+                    ChangedBy = h.ChangedByUser.FullName,
+                    ChangedAt = h.ChangedAt,
+                    Remarks = h.Remarks
+                }).ToList()
+        };
+
+        return new ApiResponse<TicketActivityDto>(
+            "Success",
+            "Ticket activity retrieved successfully",
+            data);
+    }
+
 }

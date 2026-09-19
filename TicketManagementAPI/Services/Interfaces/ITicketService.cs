@@ -39,4 +39,6 @@ public interface ITicketService
     int ticketId,
     AddCommentDto dto,
     int userId);
+    Task<ApiResponse<TicketActivityDto>> GetActivityAsync(
+    int ticketId);
 }

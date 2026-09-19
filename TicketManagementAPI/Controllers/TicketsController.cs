@@ -274,4 +274,21 @@ public class TicketsController : ControllerBase
 
         return Ok(response);
     }
+
+    [HttpGet("{id:int}/activity")]
+    public async Task<IActionResult> GetActivity(int id)
+    {
+        var response =
+            await _ticketService.GetActivityAsync(id);
+
+        if (response.Status == "Error")
+        {
+            if (response.Message == "Ticket not found")
+                return NotFound(response);
+
+            return BadRequest(response);
+        }
+
+        return Ok(response);
+    }
 }
