@@ -10,10 +10,13 @@ namespace TicketManagement.API.Services;
 public class TicketService : ITicketService
 {
     private readonly ITicketRepository _ticketRepository;
-
-    public TicketService(ITicketRepository ticketRepository)
+    private readonly IAuthRepository _authRepository;
+    public TicketService(
+    ITicketRepository ticketRepository,
+    IAuthRepository authRepository)
     {
         _ticketRepository = ticketRepository;
+        _authRepository = authRepository;
     }
 
     public async Task<ApiResponse<List<TicketResponseDto>>> GetAllAsync()
@@ -338,4 +341,156 @@ public class TicketService : ITicketService
             "Ticket updated successfully",
             MapToDto(updatedTicket));
     }
+    public async Task<ApiResponse<TicketResponseDto>> AssignSolverAsync(
+    int ticketId,
+    int solverId)
+    {
+        if (ticketId <= 0 || solverId <= 0)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid ticket or solver ID",
+                null);
+        }
+
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+
+        if (ticket == null)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket not found",
+                null);
+        }
+
+        var solver = await _authRepository.GetByIdAsync(solverId);
+
+        if (solver == null)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Solver not found",
+                null);
+        }
+
+        if (solver.Role != UserRole.Solver)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Selected user is not a Solver",
+                null);
+        }
+
+        ticket.AssignedToUserId = solverId;
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        await _ticketRepository.SaveChangesAsync();
+
+        var updatedTicket =
+            await _ticketRepository.GetByIdAsync(ticketId);
+
+        return new ApiResponse<TicketResponseDto>(
+            "Success",
+            "Solver assigned successfully",
+            MapToDto(updatedTicket!));
+    }
+
+    public async Task<ApiResponse<TicketResponseDto>> UpdateStatusAsync(
+    int ticketId,
+    UpdateTicketStatusDto dto,
+    int userId,
+    string role)
+    {
+        if (ticketId <= 0)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid ticket ID",
+                null);
+        }
+
+        if (!Enum.TryParse<TicketStatus>(
+            dto.Status,
+            true,
+            out var newStatus))
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Invalid ticket status",
+                null);
+        }
+
+        var ticket = await _ticketRepository.GetByIdAsync(ticketId);
+
+        if (ticket == null)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Ticket not found",
+                null);
+        }
+
+        if (ticket.Status == TicketStatus.Closed ||
+            ticket.Status == TicketStatus.Rejected)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "Closed or rejected tickets cannot be changed",
+                null);
+        }
+
+        bool canUpdate = role switch
+        {
+            "Admin" => true,
+
+            "Solver" =>
+                ticket.AssignedToUserId == userId,
+
+            _ => false
+        };
+
+        if (!canUpdate)
+        {
+            return new ApiResponse<TicketResponseDto>(
+                "Error",
+                "You are not authorized to change ticket status",
+                null);
+        }
+
+        var oldStatus = ticket.Status;
+
+        ticket.Status = newStatus;
+        ticket.UpdatedAt = DateTime.UtcNow;
+
+        if (newStatus == TicketStatus.Closed ||
+            newStatus == TicketStatus.Rejected)
+        {
+            ticket.ClosedAt = DateTime.UtcNow;
+            ticket.ResolutionNotes =
+                dto.ResolutionNotes?.Trim();
+        }
+
+        await _ticketRepository.SaveChangesAsync();
+
+        var history = new TicketStatusHistory
+        {
+            TicketId = ticket.Id,
+            OldStatus = oldStatus,
+            NewStatus = newStatus,
+            ChangedByUserId = userId,
+            ChangedAt = DateTime.UtcNow,
+            Remarks = dto.ResolutionNotes?.Trim()
+        };
+
+        await _ticketRepository.AddStatusHistoryAsync(history);
+
+        var updatedTicket =
+            await _ticketRepository.GetByIdAsync(ticketId);
+
+        return new ApiResponse<TicketResponseDto>(
+            "Success",
+            "Ticket status updated successfully",
+            MapToDto(updatedTicket!));
+    }
+
 }

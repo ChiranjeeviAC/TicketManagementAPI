@@ -56,17 +56,35 @@ public class AuthService : IAuthService
                 null);
         }
 
+        if (!Enum.TryParse<UserRole>(
+    dto.Role,
+    true,
+    out var role))
+        {
+            return new ApiResponse<object>(
+                "Error",
+                "Role must be Employee or Solver",
+                null);
+        }
+
+        if (role == UserRole.Admin)
+        {
+            return new ApiResponse<object>(
+                "Error",
+                "Admin registration is not allowed",
+                null);
+        }
+
         var user = new User
         {
             FullName = dto.FullName.Trim(),
             Email = dto.Email.Trim().ToLower(),
             PhoneNumber = dto.PhoneNumber.Trim(),
-            Role = UserRole.Employee,
+            Role = role,
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
 
-        // Password hashing
         var hasher = new PasswordHasher<User>();
 
         user.PasswordHash = hasher.HashPassword(

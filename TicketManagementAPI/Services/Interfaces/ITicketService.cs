@@ -24,4 +24,14 @@ public interface ITicketService
        UpdateTicketDto dto,
        int userId,
        string role);
+
+    Task<ApiResponse<TicketResponseDto>> AssignSolverAsync(
+    int ticketId,
+    int solverId);
+
+    Task<ApiResponse<TicketResponseDto>> UpdateStatusAsync(
+    int ticketId,
+    UpdateTicketStatusDto dto,
+    int userId,
+    string role);
 }

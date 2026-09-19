@@ -15,4 +15,9 @@ public interface ITicketRepository
     Task AddAsync(Ticket ticket);
 
     Task SaveChangesAsync();
+
+    Task AddStatusHistoryAsync(TicketStatusHistory history);
+
+    Task<List<TicketStatusHistory>> GetStatusHistoryAsync(
+        int ticketId);
 }

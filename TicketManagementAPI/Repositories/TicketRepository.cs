@@ -62,4 +62,24 @@ public class TicketRepository : ITicketRepository
     {
         await _context.SaveChangesAsync();
     }
+
+    public async Task AddStatusHistoryAsync(
+    TicketStatusHistory history)
+    {
+        await _context.TicketStatusHistories.AddAsync(history);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<List<TicketStatusHistory>> GetStatusHistoryAsync(
+        int ticketId)
+    {
+        return await _context.TicketStatusHistories
+            .Include(h => h.ChangedByUser)
+            .Where(h => h.TicketId == ticketId)
+            .OrderByDescending(h => h.ChangedAt)
+            .ToListAsync();
+    }
+
+
+
 }
